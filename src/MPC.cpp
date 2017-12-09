@@ -1,6 +1,8 @@
 #include "MPC.h"
 #include <cppad/cppad.hpp>
+#define HAVE_STDDEF_H
 #include <cppad/ipopt/solve.hpp>
+#undef HAVE_STDDEF_H
 #include "Eigen-3.3/Eigen/Core"
 #include <limits>
 #include <math.h>
@@ -22,6 +24,12 @@ double dt = 0.2;
 //
 // This is the length from front to CoG that has a similar radius.
 const double Lf = 2.67;
+
+// Setpoints
+const double v_sp = 25.0;
+
+// Constraints
+const double turn_lim = 25.0; // degrees
 
 // Start positions in vars
 const size_t x_start = 0;
@@ -53,20 +61,20 @@ class FG_eval {
   void operator()(ADvector& fg, const ADvector& vars) {
       
     // The part of the cost based on the reference state.
-    for (int t = 0; t < N; t++) {
+    for (unsigned int t = 0; t < N; t++) {
       fg[0] += w_cte * CppAD::pow(vars[cte_start + t], 2);
       fg[0] += w_psi_err * CppAD::pow(vars[epsi_start + t], 2);
-      fg[0] += w_v_diff * CppAD::pow(vars[v_start + t] - ref_v, 2);
+      fg[0] += w_v_diff * CppAD::pow(vars[v_start + t] - v_sp, 2);
     }
 
     // Minimize the use of actuators.
-    for (int t = 0; t < N - 1; t++) {
+    for (unsigned int t = 0; t < N - 1; t++) {
       fg[0] += w_act_str * CppAD::pow(vars[delta_start + t], 2);
       fg[0] += w_act_accel * CppAD::pow(vars[a_start + t], 2);
     }
 
     // Minimize the value gap between sequential actuations.
-    for (int t = 0; t < N - 2; t++) {
+    for (unsigned int t = 0; t < N - 2; t++) {
       fg[0] += w_gap_str * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
       fg[0] += w_gap_accel * CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
     }
@@ -78,7 +86,7 @@ class FG_eval {
     fg[v_start + 1] = vars[v_start];
     fg[cte_start + 1] = vars[cte_start];
     fg[epsi_start + 1] = vars[epsi_start];
-    for (int i = 0; i < N - 1; ++i) {
+    for (unsigned int i = 0; i < N - 1; ++i) {
       // Time t0 variables
       AD<double> x_0 = vars[x_start + i];
       AD<double> y_0 = vars[y_start + i];
@@ -88,8 +96,8 @@ class FG_eval {
       AD<double> epsi_0 = vars[epsi_start + i];
       AD<double> f_0 = coeffs[0] +
                        coeffs[1] * x_0 +
-                       coeffs[2] * CppAD::pow(x0, 2) +
-                       coeffs[3] * CppAD::pox_0w(x_0, 3);
+                       coeffs[2] * CppAD::pow(x_0, 2) +
+                       coeffs[3] * CppAD::pow(x_0, 3);
       AD<double> psides_0 = CppAD::atan(coeffs[1] + 2 * coeffs[2] * x_0 + 3 * coeffs[3] * CppAD::pow(x_0, 2));
       AD<double> delta = vars[delta_start + i];
       AD<double> a = vars[a_start + i];
@@ -103,12 +111,12 @@ class FG_eval {
       AD<double> epsi_1 = vars[epsi_start + i + 1];
 
       // Calculate other constraints
-      fg[1 + x_start + t] = x_1 - (x_0 + v_0 * CppAD::cos(psi_0) * dt);
-      fg[1 + y_start + t] = y_1 - (y_0 + v_0 * CppAD::sin(psi_0) * dt);
-      fg[1 + psi_start + t] = psi_1 - (psi_0 - v_0 / Lf * delta * dt);
-      fg[1 + v_start + t] = v_1 - (v_0 + a * dt);
-      fg[1 + cte_start + t] = cte_1 - ((f_0 - y_0) + (v0 * CppAD::sin(epsi_0) * dt));
-      fg[1 + epsi_start + t] = epsi_1 - ((psi_0 - psides_0) - v_0 / Lf * delta * dt);
+      fg[1 + x_start + i] = x_1 - (x_0 + v_0 * CppAD::cos(psi_0) * dt);
+      fg[1 + y_start + i] = y_1 - (y_0 + v_0 * CppAD::sin(psi_0) * dt);
+      fg[1 + psi_start + i] = psi_1 - (psi_0 - v_0 / Lf * delta * dt);
+      fg[1 + v_start + i] = v_1 - (v_0 + a * dt);
+      fg[1 + cte_start + i] = cte_1 - ((f_0 - y_0) + (v_0 * CppAD::sin(epsi_0) * dt));
+      fg[1 + epsi_start + i] = epsi_1 - ((psi_0 - psides_0) - v_0 / Lf * delta * dt);
     }
     
   }
@@ -133,36 +141,36 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   // Initial value of the independent variables.
   // SHOULD BE 0 besides initial state.
   Dvector vars(n_vars);
-  for (int i = 0; i < n_vars; i++) {
+  for (unsigned int i = 0; i < n_vars; i++) {
     vars[i] = 0;
   }
   
   // Set initial state variables
-  vars[x_start] = x;
-  vars[y_start] = y;
-  vars[psi_start] = psi;
-  vars[v_start] = v;
-  vars[cte_start] = cte;
-  vars[epsi_start] = epsi;
+  vars[x_start] = state[0];
+  vars[y_start] = state[1];
+  vars[psi_start] = state[2];
+  vars[v_start] = state[3];
+  vars[cte_start] = state[4];
+  vars[epsi_start] = state[5];
 
   // Set lower and upper limits for variables.
   Dvector vars_lowerbound(n_vars);
   Dvector vars_upperbound(n_vars);
 
   // No limits 
-  for (int i = 0; i < delta_start; i++) {
+  for (unsigned int i = 0; i < delta_start; i++) {
     vars_lowerbound[i] = std::numeric_limits<double>::lowest();
     vars_upperbound[i] = std::numeric_limits<double>::max();
   }
   
   // Turning limits (radians)
-  for (int i = delta_start; i < a_start; i++) {
-    vars_lowerbound[i] = (M_PI / 180.0) * -25.0; // -25 degrees
-    vars_upperbound[i] = (M_PI / 180.0) * 25.0; // 25 degrees
+  for (unsigned int i = delta_start; i < a_start; i++) {
+    vars_lowerbound[i] = (M_PI / 180.0) * -turn_lim;
+    vars_upperbound[i] = (M_PI / 180.0) * turn_lim;
   }
   
   // Accel/decel limits (normalized)
-  for (int i = a_start; i < n_vars; i++) {
+  for (unsigned int i = a_start; i < n_vars; i++) {
     vars_lowerbound[i] = -1.0;
     vars_upperbound[i] = 1.0;
   }
@@ -171,7 +179,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   // Should be 0 besides initial state.
   Dvector constraints_lowerbound(n_constraints);
   Dvector constraints_upperbound(n_constraints);
-  for (int i = 0; i < n_constraints; i++) {
+  for (unsigned int i = 0; i < n_constraints; i++) {
     constraints_lowerbound[i] = 0;
     constraints_upperbound[i] = 0;
   }
