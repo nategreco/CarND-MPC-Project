@@ -92,14 +92,26 @@ int main() {
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
 
-          /*
-          * TODO: Calculate steering angle and throttle using MPC.
-          *
-          * Both are in between [-1, 1].
-          *
-          */
-          double steer_value;
-          double throttle_value;
+          /* Calculate steering angle and throttle using MPC. */
+          
+          // Create state function
+          Eigen::VectorXd state;
+          // ToDo
+          
+          // Get desired trajectory waypoints
+          Eigen::VectorXd waypts_x;
+          Eigen::VectorXd waypts_y;
+          // ToDo
+          
+          // Get trajectory characterzied as 3rd degree polynomial
+          Eigen::VectorXd coeffs = polyfit(waypts_x, waypts_y, 3);
+
+          // Solve
+          vector<double> values = mpc.Solve(state, coeffs);
+          
+          // Get actuator values
+          double steer_value = turn_lim * values[0]; // Scale to turn limits
+          double throttle_value = values[1]; // Already -1 to 1
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.

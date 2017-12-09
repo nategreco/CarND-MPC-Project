@@ -6,6 +6,9 @@
 
 using namespace std;
 
+// Constraints
+const double turn_lim = 25.0; // degrees
+
 class MPC {
  public:
   MPC();

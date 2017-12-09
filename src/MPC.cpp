@@ -28,9 +28,6 @@ const double Lf = 2.67;
 // Setpoints
 const double v_sp = 25.0;
 
-// Constraints
-const double turn_lim = 25.0; // degrees
-
 // Start positions in vars
 const size_t x_start = 0;
 const size_t y_start = x_start + N;
@@ -50,7 +47,6 @@ const double w_act_accel = 1.0;
 const double w_gap_str = 1.0;
 const double w_gap_accel = 1.0;
 
-
 class FG_eval {
  public:
   // Fitted polynomial coefficients
@@ -59,6 +55,8 @@ class FG_eval {
 
   typedef CPPAD_TESTVECTOR(AD<double>) ADvector;
   void operator()(ADvector& fg, const ADvector& vars) {
+    // Initialize cost
+    fg[0] = 0;
       
     // The part of the cost based on the reference state.
     for (unsigned int t = 0; t < N; t++) {
@@ -141,7 +139,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   // Initial value of the independent variables.
   // SHOULD BE 0 besides initial state.
   Dvector vars(n_vars);
-  for (unsigned int i = 0; i < n_vars; i++) {
+  for (unsigned int i = 0; i < n_vars; ++i) {
     vars[i] = 0;
   }
   
@@ -158,19 +156,19 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   Dvector vars_upperbound(n_vars);
 
   // No limits 
-  for (unsigned int i = 0; i < delta_start; i++) {
+  for (unsigned int i = 0; i < delta_start; ++i) {
     vars_lowerbound[i] = std::numeric_limits<double>::lowest();
     vars_upperbound[i] = std::numeric_limits<double>::max();
   }
   
   // Turning limits (radians)
-  for (unsigned int i = delta_start; i < a_start; i++) {
+  for (unsigned int i = delta_start; i < a_start; ++i) {
     vars_lowerbound[i] = (M_PI / 180.0) * -turn_lim;
     vars_upperbound[i] = (M_PI / 180.0) * turn_lim;
   }
   
   // Accel/decel limits (normalized)
-  for (unsigned int i = a_start; i < n_vars; i++) {
+  for (unsigned int i = a_start; i < n_vars; ++i) {
     vars_lowerbound[i] = -1.0;
     vars_upperbound[i] = 1.0;
   }
@@ -179,10 +177,24 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   // Should be 0 besides initial state.
   Dvector constraints_lowerbound(n_constraints);
   Dvector constraints_upperbound(n_constraints);
-  for (unsigned int i = 0; i < n_constraints; i++) {
+  for (unsigned int i = 0; i < n_constraints; ++i) {
     constraints_lowerbound[i] = 0;
     constraints_upperbound[i] = 0;
   }
+  
+  // Set initial state variables
+  constraints_lowerbound[x_start] = state[0];
+  constraints_upperbound[x_start] = state[0];
+  constraints_lowerbound[y_start] = state[1];
+  constraints_upperbound[y_start] = state[1];
+  constraints_lowerbound[psi_start] = state[2];
+  constraints_upperbound[psi_start] = state[2];
+  constraints_lowerbound[v_start] = state[3];
+  constraints_upperbound[v_start] = state[3];
+  constraints_lowerbound[cte_start] = state[4];
+  constraints_upperbound[cte_start] = state[4];
+  constraints_lowerbound[epsi_start] = state[5];
+  constraints_upperbound[epsi_start] = state[5];
 
   // object that computes objective and constraints
   FG_eval fg_eval(coeffs);
@@ -220,10 +232,24 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   auto cost = solution.obj_value;
   std::cout << "Cost " << cost << std::endl;
 
-  // TODO: Return the first actuator values. The variables can be accessed with
+  // Return the first actuator values. The variables can be accessed with
   // `solution.x[i]`.
   //
   // {...} is shorthand for creating a vector, so auto x1 = {1.0,2.0}
   // creates a 2 element double vector.
-  return {};
+
+  // Create values vector
+  std::vector<double> values = {
+    solution.x[delta_start],
+    solution.x[a_start]
+  };
+
+  // Get x and y points
+  for (unsigned int i = 1; i < N; ++i) {
+    values.push_back(solution.x[x_start + i]);
+    values.push_back(solution.x[y_start + i]);
+  }
+
+  // Return solution values
+  return values;
 }
