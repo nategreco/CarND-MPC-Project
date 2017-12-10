@@ -6,8 +6,10 @@
 
 using namespace std;
 
-// Constraints
+// Constants
 const double turn_lim = 25.0; // degrees
+const double delay = 0.05; // response delay in seconds
+const double Lf = 2.67;
 
 class MPC {
  public:
