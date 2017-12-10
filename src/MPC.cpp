@@ -109,12 +109,12 @@ class FG_eval {
       AD<double> epsi_1 = vars[epsi_start + i + 1];
 
       // Calculate other constraints
-      fg[1 + x_start + i] = x_1 - (x_0 + v_0 * CppAD::cos(psi_0) * dt);
-      fg[1 + y_start + i] = y_1 - (y_0 + v_0 * CppAD::sin(psi_0) * dt);
-      fg[1 + psi_start + i] = psi_1 - (psi_0 - v_0 / Lf * delta * dt);
-      fg[1 + v_start + i] = v_1 - (v_0 + a * dt);
-      fg[1 + cte_start + i] = cte_1 - ((f_0 - y_0) + (v_0 * CppAD::sin(epsi_0) * dt));
-      fg[1 + epsi_start + i] = epsi_1 - ((psi_0 - psides_0) - v_0 / Lf * delta * dt);
+      fg[2 + x_start + i] = x_1 - (x_0 + v_0 * CppAD::cos(psi_0) * dt);
+      fg[2 + y_start + i] = y_1 - (y_0 + v_0 * CppAD::sin(psi_0) * dt);
+      fg[2 + psi_start + i] = psi_1 - (psi_0 - v_0 / Lf * delta * dt);
+      fg[2 + v_start + i] = v_1 - (v_0 + a * dt);
+      fg[2 + cte_start + i] = cte_1 - ((f_0 - y_0) + (v_0 * CppAD::sin(epsi_0) * dt));
+      fg[2 + epsi_start + i] = epsi_1 - ((psi_0 - psides_0) - v_0 / Lf * delta * dt);
     }
     
   }
