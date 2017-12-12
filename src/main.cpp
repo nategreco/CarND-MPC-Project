@@ -106,24 +106,23 @@ int main() {
             waypts_y[i] = (ptsx[i] - px) * sin(-psi) + (ptsy[i] - py) * cos(-psi);
           }
           
-          // Get trajectory characterzied as 3rd degree polynomial
+          // Get trajectory characterized as 3rd degree polynomial
           Eigen::VectorXd coeffs = polyfit(waypts_x, waypts_y, 3);
           
           // Get cte and epsi at t = 0
           Eigen::VectorXd state(6);
           double cte = polyeval(coeffs, 0); // Get the current diff from trajectory
-          double epsi = -atan(coeffs[1]); // Get current diff from trajectoryy
+          double epsi = -atan(coeffs[1]); // Get current diff from trajectory
           
-          // Get delayed state varaibles
-          double delta = -steer_value; // Steering angle from sim needs sign reversed
+          // Get delayed state variables
           v *= 0.44704; // MPH to m/s
-          psi = delta; // in coordinate now, so use steering angle to predict x and y
+          psi = -steer_value;
           px = v * cos(psi) * delay; 
           py = v * sin(psi) * delay;
-          cte= cte + v * sin(epsi) * delay;
-          epsi += v * delta * delay / Lf;
+          cte += v * sin(epsi) * delay;
+          epsi -= v * steer_value * delay / Lf;
           psi += v * delta * delay / Lf;
-          v = v + throttle_value * delay;
+          v += throttle_value * delay;
           
           // Create state with actuator delay
           state << px, py, psi, v, cte, epsi;
