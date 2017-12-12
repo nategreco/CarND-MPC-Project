@@ -109,19 +109,24 @@ int main() {
           // Get trajectory characterzied as 3rd degree polynomial
           Eigen::VectorXd coeffs = polyfit(waypts_x, waypts_y, 3);
           
-          // Create state function
+          // Get cte and epsi at t = 0
           Eigen::VectorXd state(6);
           double cte = polyeval(coeffs, 0); // Get the current diff from trajectory
-          double epsi = -atan(coeffs[1]); // Get current diff from trajectory
+          double epsi = -atan(coeffs[1]); // Get current diff from trajectoryy
+          
+          // Get delayed state varaibles
+          double delta = -steer_value; // Steering angle from sim needs sign reversed
+          v *= 0.44704; // MPH to m/s
+          psi = delta; // in coordinate now, so use steering angle to predict x and y
+          px = v * cos(psi) * delay; 
+          py = v * sin(psi) * delay;
+          cte= cte + v * sin(epsi) * delay;
+          epsi += v * delta * delay / Lf;
+          psi += v * delta * delay / Lf;
+          v = v + throttle_value * delay;
           
           // Create state with actuator delay
-          state << v * delay,                       // x delayed
-                   0,                               // y delayed
-                   -(v * steer_value * delay) / Lf, // psi delayed
-                   v + v * throttle_value * delay,  // v delayed
-                   cte + v * sin(epsi) * delay,     // cte delayed
-                   epsi * (1 + v * delay / Lf);     // epsi delay
-          //state << 0, 0, 0, v, cte, epsi; // No delay
+          state << px, py, psi, v, cte, epsi;
           
           // Solve
           vector<double> values = mpc.Solve(state, coeffs);
