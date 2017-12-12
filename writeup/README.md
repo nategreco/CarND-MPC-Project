@@ -8,7 +8,7 @@
 
 The goals / steps of this project are the following:
 
-* Complete starter code to succesfully drive vehicle in simulator with MPC model
+* Complete starter code to successfully drive vehicle in simulator with MPC model
 
 
 ---
@@ -27,12 +27,25 @@ My project includes the following files:
 
 #### 1. Implementation
 
-The implementation of the MPC controller was done in both [MPC.cpp](../src/MPC.cpp) and [main.cpp](../src/main.cpp).
+In this model the state and trajectory of the vehicle are described from the car's perspective.  This means at time t=0, all pose values of the car (x, y, and psi) are equal to zero.  However at t=0, the velocity, cross-track error, and yaw error will still have values due to the difference from the reference waypoints.  This perspective made calculations much simpler and clear as a lot of variables would then drop out.
+
+Variables describing the vehicle state:
+
+* x - Forward position of the car
+* y - Lateral position of the car
+* psi - Yaw position of the car
+* v - Forward velocity of the car
+* cte - Cross-track error
+* epsi - Yaw position error
+
+Actuators in this model are throttle and steering.  Throttle actually encompassed both braking (negative values) and acceleration (positive values).  A delay value of 100 ms was used in the model to simulate the delayed reaction of a real mechanical system.  Introduction of this delay was found to induce oscillation in the simulator that could only be resolved by anticipating the delay.  This was done by re-evaluating the state with a predicted state in the future.  These calculations can be seen in [main.cpp](../src/main.cpp#L117), but are primarily simple trigonometry.
+
+Regarding tuning of time step and length assignment, some factors had to be considered.  First was during adjustment I attempted to maintain my time horizon by making sure the product of N and dt remained the same, and sufficiently large enough that the planned path returned to the reference path tangentially.  The visual aid in the simulator of drawing both the reference path and MPC solution path was particularly helpful in this.  Also, it was found that smaller dt allowed smoother path planning (less discontinuities), however, I had to balance this with excessive computation and shortening of the time horizon.  To do this I lowered the dt until I noticed no more improvements in the model and left it at that threshold.  The final values I settled on were 10 steps with a time step of 100 ms.
 
 Modifications to [MPC.cpp](../src/MPC.cpp) were the following:
 
-* [Timestep and length assignment](../src/MPC.cpp#L12)
-* [Setpoint assignments](../src/MPC.cpp#L16)
+* [Time step and length assignment](../src/MPC.cpp#L12)
+* [Set point assignments](../src/MPC.cpp#L16)
 * [Start position assignments](../src/MPC.cpp#L19)
 * [Cost weight assignments](../src/MPC.cpp#L29)
 * [FG_eval](../src/MPC.cpp#L38)
@@ -51,19 +64,19 @@ Modifications to [MPC.cpp](../src/MPC.cpp) were the following:
  * [Assignment of constraints bounds](../src/MPC.cpp#L164)
  * [Return from CppAD::ipopt solver](../src/MPC.cpp#L239)
 
-And modifications to [main.cpp](../src/main.cpp) were the following:
+Modifications to [main.cpp](../src/main.cpp) were the following:
 
 * [Translation of waypoints to car's perspective](../src/main.cpp#L99)
 * [Get 3rd degree polynomial coefficients that describe the trajectory](../src/main.cpp#L109)
 * [Create state matrix from car's perspective with delay](../src/main.cpp#L112)
-* [Solve with MPC](../src/main.cpp#L126)
-* [Extract actuator values from solution](../src/main.cpp#L129)
-* [Create points to draw MPC's solution path](../src/main.cpp#L143)
-* [Create points to show desired trajectory](../src/main.cpp#L155)
+* [Solve with MPC](../src/main.cpp#L131)
+* [Extract actuator values from solution](../src/main.cpp#L134)
+* [Create points to draw MPC's solution path](../src/main.cpp#L148)
+* [Create points to show desired trajectory](../src/main.cpp#L160)
 
 For the most part example code from the coursework was used.  Special considerations were transforming of the trajectory to the car's perspective and also the addition of a delay in the state matrix.  The state matrix's values consider the delayed actuation.  Before this implementation there was a tendency to oscillate in the control due to the controller always attempting to catch up.
 
-Tuning of the model involved a lot of back and forth between the cost weights and the timestep/duration.  Initially it was difficult to distinguish which needed adjustment, but as the model became better tuned it was easier to distinguish the cause and effect of each.  The model was initially first without any time delay and a lower reference velocity.  To reduce the tendency to oscillate, the weights for actuator discontinuities was increased to prevent sudden movements that would initiate an oscillation, but after the delay implementation in the model these and the reference velocity could be increased as well. 
+Tuning of the model involved a lot of back and forth between the cost weights and the time step/duration.  Initially it was difficult to distinguish which needed adjustment, but as the model became better tuned it was easier to distinguish the cause and effect of each.  The model was initially first without any time delay and a lower reference velocity.  To reduce the tendency to oscillate, the weights for actuator discontinuities was increased to prevent sudden movements that would initiate an oscillation, but after the delay implementation in the model these and the reference velocity could be increased as well. 
 
 #### 2. Results
 
