@@ -111,17 +111,19 @@ int main() {
           
           // Get cte and epsi at t = 0
           Eigen::VectorXd state(6);
+          px = 0;
+          py = 0;
+          psi = 0;
           double cte = polyeval(coeffs, 0); // Get the current diff from trajectory
           double epsi = -atan(coeffs[1]); // Get current diff from trajectory
           
-          // Get delayed state variables
-          v *= 0.44704; // MPH to m/s
-          psi = -steer_value;
-          px = v * cos(psi) * delay; 
-          py = v * sin(psi) * delay;
-          cte += v * sin(epsi) * delay;
+          // Add Delay
+          px += v * cos(psi) * delay; 
+          py += v * sin(psi) * delay;
+          psi -= v * steer_value * delay / Lf;
+          cte +=  v * sin(epsi) * delay;
           epsi -= v * steer_value * delay / Lf;
-          psi += v * delta * delay / Lf;
+          //epsi += v * epsi * delay / Lf;
           v += throttle_value * delay;
           
           // Create state with actuator delay
