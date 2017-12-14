@@ -9,6 +9,8 @@
 #include "MPC.h"
 #include "json.hpp"
 
+#define MPH_TO_MPS 0.44704
+
 // for convenience
 using json = nlohmann::json;
 
@@ -77,7 +79,7 @@ int main() {
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
     string sdata = string(data).substr(0, length);
-    cout << sdata << endl;
+    //cout << sdata << endl;
     if (sdata.size() > 2 && sdata[0] == '4' && sdata[1] == '2') {
       string s = hasData(sdata);
       if (s != "") {
@@ -117,13 +119,13 @@ int main() {
           double cte = polyeval(coeffs, 0); // Get the current diff from trajectory
           double epsi = -atan(coeffs[1]); // Get current diff from trajectory
           
-          // Add Delay
+          // Add actuator delay
+          v *= MPH_TO_MPS;
           px += v * cos(psi) * delay; 
           py += v * sin(psi) * delay;
           psi -= v * steer_value * delay / Lf;
           cte +=  v * sin(epsi) * delay;
           epsi -= v * steer_value * delay / Lf;
-          //epsi += v * epsi * delay / Lf;
           v += throttle_value * delay;
           
           // Create state with actuator delay
@@ -176,7 +178,7 @@ int main() {
 
 
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          //std::cout << msg << std::endl;
           // Latency
           // The purpose is to mimic real driving conditions where
           // the car does actuate the commands instantly.
