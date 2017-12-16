@@ -21,7 +21,8 @@ My project includes the following files:
 * [main.cpp](../src/main.cpp) main program that runs the IO server (given from starter code), fits the polynomial trajectory, and handles the actuator delays
 * [MPC.cpp](../src/MPC.cpp) implements the Model Predictive Control class
 * [MPC.h](../src/MPC.h) header file for [MPC.cpp](../src/MPC.cpp)
-* [TrackRecording.mp4](./TrackRecording.mp4) video of a single lap around the course in the simulator
+* [TrackRecording.mp4](./TrackRecording.mp4) first video of a single lap around the course in the simulator
+* [TrackRecording2.mp4](./TrackRecording2.mp4) second video of a single lap around the course in the simulator
 
 ### Discussion
 
@@ -85,5 +86,5 @@ The final results were very desirable. The added consideration of delay in the m
 Results:
 
 [TrackRecording.mp4](./TrackRecording.mp4)
-
+[TrackRecording2.mp4](./TrackRecording2.mp4)
 
