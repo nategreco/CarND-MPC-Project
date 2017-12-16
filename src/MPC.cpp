@@ -32,7 +32,7 @@ const double w_psi_err = 1500.0;
 const double w_v_diff = 1.0;
 const double w_act_str = 100.0;
 const double w_act_accel = 100.0;
-const double w_gap_str = 10000.0;
+const double w_gap_str = 5000000.0;
 const double w_gap_accel = 1000.0;
 
 class FG_eval {

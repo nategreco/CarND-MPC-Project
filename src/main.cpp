@@ -116,11 +116,11 @@ int main() {
           px = 0;
           py = 0;
           psi = 0;
+          v *= MPH_TO_MPS;
           double cte = polyeval(coeffs, 0); // Get the current diff from trajectory
           double epsi = -atan(coeffs[1]); // Get current diff from trajectory
           
           // Add actuator delay
-          v *= MPH_TO_MPS;
           px += v * cos(psi) * delay; 
           py += v * sin(psi) * delay;
           psi -= v * steer_value * delay / Lf;
