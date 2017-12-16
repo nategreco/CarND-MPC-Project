@@ -10,6 +10,8 @@ The goals / steps of this project are the following:
 
 * Complete starter code to successfully drive vehicle in simulator with MPC model
 
+[//]: # (Image References)
+[image1]: ./StateEquations.png "State Equations"
 
 ---
 
@@ -23,6 +25,7 @@ My project includes the following files:
 * [MPC.h](../src/MPC.h) header file for [MPC.cpp](../src/MPC.cpp)
 * [TrackRecording.mp4](./TrackRecording.mp4) first video of a single lap around the course in the simulator
 * [TrackRecording2.mp4](./TrackRecording2.mp4) second video of a single lap around the course in the simulator
+* [StateEquations.png](./StateEquations.png) image of equations used to calculate vehicle state
 
 ### Discussion
 
@@ -38,6 +41,10 @@ Variables describing the vehicle state:
 * v - Forward velocity of the car
 * cte - Cross-track error
 * epsi - Yaw position error
+
+Equations used to calculate vehicle state:
+
+![State Equations][image1]
 
 Actuators in this model are throttle and steering.  Throttle actually encompassed both braking (negative values) and acceleration (positive values).  A delay value of 100 ms was used in the model to simulate the delayed reaction of a real mechanical system.  Introduction of this delay was found to induce oscillation in the simulator that could only be resolved by anticipating the delay.  This was done by re-evaluating the state with a predicted state in the future.  These calculations can be seen in [main.cpp](../src/main.cpp#L117), but are primarily simple trigonometry.
 

@@ -10,8 +10,8 @@
 using CppAD::AD;
 
 // Set the timestep length and duration
-size_t N = 10;
-double dt = 0.1;
+const size_t N = 10;
+const double dt = 0.1;
 
 // Setpoints
 const double v_sp = 90.0;
@@ -27,12 +27,12 @@ const size_t delta_start = epsi_start + N;
 const size_t a_start = delta_start + N - 1;
 
 // Weights
-const double w_cte = 2000.0;
+const double w_cte = 1000.0;
 const double w_psi_err = 1500.0;
-const double w_v_diff = 1.0;
+const double w_v_diff = 1.25;
 const double w_act_str = 100.0;
 const double w_act_accel = 100.0;
-const double w_gap_str = 5000000.0;
+const double w_gap_str = 500000.0;
 const double w_gap_accel = 1000.0;
 
 class FG_eval {

@@ -89,9 +89,9 @@ int main() {
           // j[1] is the data JSON object
           vector<double> ptsx = j[1]["ptsx"];
           vector<double> ptsy = j[1]["ptsy"];
-          double px_0 = j[1]["x"];
-          double py_0  = j[1]["y"];
-          double psi_0 = j[1]["psi"];
+          double px = j[1]["x"];
+          double py  = j[1]["y"];
+          double psi = j[1]["psi"];
           double v_0 = j[1]["speed"];
           double steer_value= j[1]["steering_angle"];
           double throttle_value = j[1]["throttle"];
@@ -101,11 +101,11 @@ int main() {
           // Get desired trajectory waypoints from car's perspective
           Eigen::VectorXd waypts_x(ptsx.size());
           for (unsigned int i = 0; i < ptsx.size(); ++i) {
-            waypts_x[i] = (ptsx[i] - px_0) * cos(-psi_0) - (ptsy[i] - py_0) * sin(-psi_0);
+            waypts_x[i] = (ptsx[i] - px) * cos(-psi) - (ptsy[i] - py) * sin(-psi);
           }
           Eigen::VectorXd waypts_y(ptsy.size());
           for (unsigned int i = 0; i < ptsx.size(); ++i) {
-            waypts_y[i] = (ptsx[i] - px_0) * sin(-psi_0) + (ptsy[i] - py_0) * cos(-psi_0);
+            waypts_y[i] = (ptsx[i] - px) * sin(-psi) + (ptsy[i] - py) * cos(-psi);
           }
           
           // Get trajectory characterized as 3rd degree polynomial
@@ -113,25 +113,28 @@ int main() {
           
           // Get cte and epsi_0 at t = 0
           Eigen::VectorXd state(6);
-          px_0 = 0;
-          py_0  = 0;
-          psi_0 = 0;
+          double px_0 = 0;
+          double py_0  = 0;
+          double psi_0 = 0;
           v_0 *= MPH_TO_MPS;
-          double cte_0 = polyeval(coeffs, 0); // Get the current diff from trajectory
-          double epsi_0 = -atan(coeffs[1]); // Get current diff from trajectory
+          double cte_0 = polyeval(coeffs, 0) - py_0;
+          double epsi_0 = psi_0 - atan(coeffs[1]);
+          
+          // Average between t=0 and t=1 for delay calculations
+          double v_avg = v_0 + 0.5 * throttle_value * delay;
+          double psi_avg = psi_0 - 0.5 * v_avg * steer_value * delay / Lf;
           
           // Add actuator delay
-          double v_avg = v_0 + 0.5 * throttle_value * delay;
-          double px_1 = px_0 + v_avg * cos(psi_0) * delay; 
-          double py_1 = py_0  + v_avg * sin(psi_0) * delay;
-          double psi_1 = psi_0 - v_avg * steer_value * delay / Lf;
+          double px_1 = px_0 + v_avg * cos(psi_avg) * delay; 
+          double py_1 = py_0  + v_avg * sin(psi_avg) * delay;
+          double psi_1 = psi_avg - v_avg * steer_value * delay / Lf;
           double v_1 = v_0 + throttle_value * delay;
-          double cte_1 = cte_0 + v_avg * sin(epsi_0) * delay;
-          double epsi_1 = epsi_0 - v_avg * steer_value * delay / Lf;
+          double cte_1 = cte_0 - py_0 + v_avg * sin(epsi_0) * delay; // f(x=0) = cte_0
+          double epsi_1 = psi_0 - epsi_0 - v_avg * steer_value * delay / Lf; // ψdes = epsi_0
           
           // Create state with actuator delay
           state << px_1, py_1, psi_1, v_1, cte_1, epsi_1;
-          
+
           // Solve
           vector<double> values = mpc.Solve(state, coeffs);
           
