@@ -121,12 +121,13 @@ int main() {
           double epsi_0 = -atan(coeffs[1]); // Get current diff from trajectory
           
           // Add actuator delay
-          double px_1 = px_0 + v_0 * cos(psi_0) * delay; 
-          double py_1 = py_0  + v_0 * sin(psi_0) * delay;
-          double psi_1 = psi_0 - v_0 * steer_value * delay / Lf;
+          double v_avg = v_0 + 0.5 * throttle_value * delay;
+          double px_1 = px_0 + v_avg * cos(psi_0) * delay; 
+          double py_1 = py_0  + v_avg * sin(psi_0) * delay;
+          double psi_1 = psi_0 - v_avg * steer_value * delay / Lf;
           double v_1 = v_0 + throttle_value * delay;
-          double cte_1 = cte_0 + v_0 * sin(epsi_0) * delay;
-          double epsi_1 = epsi_0 - v_0 * steer_value * delay / Lf;
+          double cte_1 = cte_0 + v_avg * sin(epsi_0) * delay;
+          double epsi_1 = epsi_0 - v_avg * steer_value * delay / Lf;
           
           // Create state with actuator delay
           state << px_1, py_1, psi_1, v_1, cte_1, epsi_1;
@@ -166,9 +167,9 @@ int main() {
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
-          unsigned int stp = 2;
-          unsigned int cnt = 40;
-          for (unsigned int x = 2; x <= stp * cnt; x += stp) {
+          int stp = 2;
+          int cnt = 40;
+          for (signed int x = -stp * 5; x <= stp * cnt; x += stp) {
             next_x_vals.push_back(x);
             next_y_vals.push_back(polyeval(coeffs, x));
           }
