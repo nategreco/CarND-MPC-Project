@@ -89,10 +89,10 @@ int main() {
           // j[1] is the data JSON object
           vector<double> ptsx = j[1]["ptsx"];
           vector<double> ptsy = j[1]["ptsy"];
-          double px = j[1]["x"];
-          double py = j[1]["y"];
-          double psi = j[1]["psi"];
-          double v = j[1]["speed"];
+          double px_0 = j[1]["x"];
+          double py_0  = j[1]["y"];
+          double psi_0 = j[1]["psi"];
+          double v_0 = j[1]["speed"];
           double steer_value= j[1]["steering_angle"];
           double throttle_value = j[1]["throttle"];
 
@@ -101,35 +101,35 @@ int main() {
           // Get desired trajectory waypoints from car's perspective
           Eigen::VectorXd waypts_x(ptsx.size());
           for (unsigned int i = 0; i < ptsx.size(); ++i) {
-            waypts_x[i] = (ptsx[i] - px) * cos(-psi) - (ptsy[i] - py) * sin(-psi);
+            waypts_x[i] = (ptsx[i] - px_0) * cos(-psi_0) - (ptsy[i] - py_0) * sin(-psi_0);
           }
           Eigen::VectorXd waypts_y(ptsy.size());
           for (unsigned int i = 0; i < ptsx.size(); ++i) {
-            waypts_y[i] = (ptsx[i] - px) * sin(-psi) + (ptsy[i] - py) * cos(-psi);
+            waypts_y[i] = (ptsx[i] - px_0) * sin(-psi_0) + (ptsy[i] - py_0) * cos(-psi_0);
           }
           
           // Get trajectory characterized as 3rd degree polynomial
           Eigen::VectorXd coeffs = polyfit(waypts_x, waypts_y, 3);
           
-          // Get cte and epsi at t = 0
+          // Get cte and epsi_0 at t = 0
           Eigen::VectorXd state(6);
-          px = 0;
-          py = 0;
-          psi = 0;
-          v *= MPH_TO_MPS;
-          double cte = polyeval(coeffs, 0); // Get the current diff from trajectory
-          double epsi = -atan(coeffs[1]); // Get current diff from trajectory
+          px_0 = 0;
+          py_0  = 0;
+          psi_0 = 0;
+          v_0 *= MPH_TO_MPS;
+          double cte_0 = polyeval(coeffs, 0); // Get the current diff from trajectory
+          double epsi_0 = -atan(coeffs[1]); // Get current diff from trajectory
           
           // Add actuator delay
-          px += v * cos(psi) * delay; 
-          py += v * sin(psi) * delay;
-          psi -= v * steer_value * delay / Lf;
-          cte +=  v * sin(epsi) * delay;
-          epsi -= v * steer_value * delay / Lf;
-          v += throttle_value * delay;
+          double px_1 = px_0 + v_0 * cos(psi_0) * delay; 
+          double py_1 = py_0  + v_0 * sin(psi_0) * delay;
+          double psi_1 = psi_0 - v_0 * steer_value * delay / Lf;
+          double v_1 = v_0 + throttle_value * delay;
+          double cte_1 = cte_0 + v_0 * sin(epsi_0) * delay;
+          double epsi_1 = epsi_0 - v_0 * steer_value * delay / Lf;
           
           // Create state with actuator delay
-          state << px, py, psi, v, cte, epsi;
+          state << px_1, py_1, psi_1, v_1, cte_1, epsi_1;
           
           // Solve
           vector<double> values = mpc.Solve(state, coeffs);
